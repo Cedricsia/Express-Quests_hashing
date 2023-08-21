@@ -2,7 +2,8 @@ const { hashPassword } = require("./auth");
 const database = require("./database");
 
 const getUsers = (req, res) => {
-  const initialSql = "SELECT firstname,lastname,email,city,language from users";
+  const initialSql =
+    "SELECT id,firstname,lastname,email,city,language from users";
   const where = [];
 
   if (req.query.city != null) {
@@ -38,12 +39,32 @@ const getUsers = (req, res) => {
     });
 };
 
+const getUserByEmailWithPasswordAndPassToNext = (req, res, next) => {
+  const { email } = req.body;
+
+  database
+    .query("select * from users where email = ?", [email])
+    .then(([users]) => {
+      if (users[0] != null) {
+        req.user = users[0];
+
+        next();
+      } else {
+        res.sendStatus(401);
+      }
+    })
+    .catch((err) => {
+      console.error(err);
+      res.status(500).send("Error retrieving data from database");
+    });
+};
+
 const getUserById = (req, res) => {
   const id = parseInt(req.params.id);
 
   database
     .query(
-      "SELECT firstname,lastname,email,city,language from users where id = ?",
+      "SELECT id, firstname,lastname,email,city,language from users where id = ?",
       [id]
     )
     .then(([users]) => {
@@ -124,4 +145,5 @@ module.exports = {
   postUser,
   updateUser,
   deleteUser,
+  getUserByEmailWithPasswordAndPassToNext,
 };
